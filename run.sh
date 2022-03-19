@@ -145,7 +145,6 @@ TUNFILE=/dev/net/tun
 # set file permissions
 chmod 600 "${config_root}"/*
 chmod +x /etc/wireguard/peer.sh
-chmod +x /etc/wireguard/echo.sh
 
 info "Bringing interface wg0 up..."
 wg-quick up wg0
