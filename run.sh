@@ -9,7 +9,7 @@ cleanup() {
 trap "cleanup" TERM INT QUIT EXIT
 
 info() {
-    echo "[INFO] $1"
+    echo "[INFO] $1"    
 }
 
 warn() {
@@ -95,6 +95,7 @@ then
 fi
 
 info "Assigning '${SERVER_HOST}' as host address..."
+sed -i "s|serverip|${SERVER_HOST}|g" /etc/wireguard/template 
 
 # restrict default file creation permissions
 umask 077
@@ -122,6 +123,10 @@ AVAILABLE_IPS="$(./prips.sh "${MINADDR}" "${MAXADDR}")"
 # remove server address from available addresses
 # shellcheck disable=SC2001
 AVAILABLE_IPS="$(sed "s/\b${SERVER_ADDRESS}\b//g" <<< "${AVAILABLE_IPS}")"
+if [ ! -f /mnt/vol/avail-ip ]
+then
+    nextip $SERVER_ADDRESS > /mnt/conf/avail-ip
+fi
 
 # substitute env vars in server template conf
 export SERVER_ADDRESS SERVER_PRIVKEY
@@ -133,22 +138,19 @@ case "${PEERS}" in
    (*)           PEERS=$(seq 1 "${PEERS}") ;;
 esac
 
-cat >> "${server_conf_path}" << EOF
-[Peer]
-PublicKey = 9gEv0PX2PhTqXSYhOAS5eIlIAkwpwMtTwc2BK4XwhTo=
-AllowedIPs = 0.0.0.0/0
-Endpoint =  3.71.7.147:51820
-PersistentKeepalive = 10
-EOF
-
 mkdir -p /dev/net
 TUNFILE=/dev/net/tun
 [ ! -c ${TUNFILE} ] && mknod ${TUNFILE} c 10 200
 
 # set file permissions
 chmod 600 "${config_root}"/*
+chmod +x /etc/wireguard/peer.sh
+chmod +x /etc/wireguard/echo.sh
 
 info "Bringing interface wg0 up..."
 wg-quick up wg0
+
+info "Running webhook..."
+/usr/bin/webhook -hooks /etc/wireguard/hook.json -verbose >/dev/null 2>&1 &
 
 tail -f /dev/null

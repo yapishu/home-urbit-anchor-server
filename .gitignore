@@ -10,3 +10,8 @@ Cargo.lock
 **/*.rs.bk
 # reid's stuff
 notes.md
+runcon
+build
+shell
+stop
+echo.sh

@@ -1,7 +1,7 @@
 FROM golang:1.17.1-alpine3.14 AS wireguard-go
 
 # hadolint ignore=DL3018
-RUN apk add --no-cache curl build-base
+RUN apk add --no-cache -t build-deps curl build-base libc-dev gcc libgcc
 
 WORKDIR /usr/src/app
 
@@ -13,12 +13,24 @@ RUN curl -fsSL https://git.zx2c4.com/wireguard-go/snapshot/wireguard-go-${WG_GO_
     make -C wireguard-go-${WG_GO_TAG} -j"$(nproc)" && \
     make -C wireguard-go-${WG_GO_TAG} install
 
+# Initial setup for webhook
+ENV WEBHOOK_VERSION "2.8.0"
+
+RUN curl -L --silent -o webhook.tar.gz https://github.com/adnanh/webhook/archive/${WEBHOOK_VERSION}.tar.gz && \
+    tar -xzf webhook.tar.gz --strip 1 &&  \
+    go get -d && \
+    go build -o /usr/local/bin/webhook && \
+    apk del --purge build-deps && \
+    rm -rf /var/cache/apk/* && \
+    rm -rf /go
+
 FROM alpine:3.14
 
 COPY --from=wireguard-go /usr/bin/wireguard-go /usr/bin/
+COPY --from=wireguard-go /usr/local/bin/webhook /usr/bin/
 
 # hadolint ignore=DL3018
-RUN apk add --no-cache \
+RUN apk add --update --no-cache \
     bash \
     build-base \
     curl \
@@ -37,7 +49,8 @@ RUN apk add --no-cache \
     ipcalc \
     openssl-dev \
     perl \
-    neovim
+    neovim \
+    jq
 
 WORKDIR /usr/src/app
 
@@ -65,8 +78,8 @@ RUN patch -d /usr/src/app/wireguard-linux-compat-${WG_LINUX_TAG}/ -p0 < wireguar
 ARG BALENA_DEVICE_TYPE=%%BALENA_MACHINE_NAME%%
 ARG BALENA_HOST_OS_VERSION=2.83.18+rev1
 
-COPY buildmod.sh ./
-RUN chmod +x ./buildmod.sh && ./buildmod.sh
+# COPY buildmod.sh ./
+# RUN chmod +x ./buildmod.sh && ./buildmod.sh
 
 WORKDIR /usr/src/app/templates
 
@@ -83,7 +96,17 @@ COPY show-peer /usr/bin/
 
 RUN chmod +x run.sh /usr/bin/show-peer
 
-COPY peer_1.conf /etc/wireguard/peer_1.conf
+# COPY peer_1.conf /etc/wireguard/peer_1.conf
+COPY hook.json /etc/wireguard/hook.json
+COPY peer.sh /etc/wireguard/peer.sh
+COPY template /etc/wireguard/template
+COPY nextip /usr/sbin/nextip
+
+RUN chmod +x /usr/sbin/nextip
+
+VOLUME [ "/mnt/conf" ]
+EXPOSE 9000
+EXPOSE 51820
 
 CMD [ "/usr/src/app/run.sh" ]
 

@@ -3,11 +3,10 @@
     "id": "new-peer",
     "execute-command": "/etc/wireguard/peer.sh",
     "command-working-directory": "/etc/wireguard",
-    "http-methods": ["POST"],
     "pass-arguments-to-command":
     [
 	{
-		"source": "payload",
+		"source": "entire-payload",
 		"name": "peer-id"
 	}
     ],
