@@ -10,6 +10,7 @@
 		"name": "peer-id"
 	}
     ],
-    "response-message": "Webhook executing"
+    "response-message": "Webhook executing",
+    "include-command-output-in-response": true
     }
 ]

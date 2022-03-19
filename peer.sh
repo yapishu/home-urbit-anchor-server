@@ -23,7 +23,7 @@ PEER=`echo $INPUT|jq -r .name`
 PUBKEY=`echo $INPUT|jq -r .pubkey`
 cd ${WGPATH}
 umask 077
-echo "Generating interface configuration..."
+echo "Generating interface configuration..." >> /proc/1/fd/1
 
 ###
 ### TODO: a better way to track IP addresses
@@ -35,26 +35,28 @@ NEWIP_PEER=`cat /mnt/conf/avail-ip`
 ###
 
 # Print new peer entry to interface config
-printf "\n\n# ${PEER}\n[Peer]\nPublicKey = ${PUBKEY}\nAllowedIPs = \
+printf "\n# ${PEER}\n[Peer]\nPublicKey = ${PUBKEY}\nAllowedIPs = \
 0.0.0.0/0\nPersistentKeepalive = 10\n" >> ${INTERFACE}.conf
 
 # Generate .conf for client, place in volume
 PEERCONF="/mnt/conf/${PEER}.${DATE}.conf"
-echo "Generating client configuration..."
+echo "Generating client configuration..." >> /proc/1/fd/1
 cp template ${PEERCONF}
-echo "Replacing name with ${PEER}"
+echo "Replacing name with ${PEER}" >> /proc/1/fd/1
 sed -i "s|name|${PEER}|g" ${PEERCONF}
-echo "Replacing IP with ${NEWIP_PEER}"
+echo "Replacing IP with ${NEWIP_PEER}" >> /proc/1/fd/1
 sed -i "s|clientip|${NEWIP_PEER}|g" ${PEERCONF}
-echo "Replacing pubkey with ${PUBKEY}"
+echo "Replacing pubkey with ${PUBKEY}" >> /proc/1/fd/1
 sed -i "s|pubkey|${PUBKEY}|g" ${PEERCONF}
-echo "${PEER} complete"
+echo "${PEER} complete" >> /proc/1/fd/1
 echo "======="
 nextip ${NEWIP_PEER} > /mnt/conf/avail-ip
 ######
 ####
 ##
 
-echo "Reloading interface..."
-wg-quick down ${INTERFACE}
-wg-quick up ${INTERFACE}
+echo "Reloading interface..." >> /proc/1/fd/1
+wg-quick down ${INTERFACE} >> /proc/1/fd/1
+wg-quick up ${INTERFACE} >> /proc/1/fd/1
+
+cat ${PEERCONF}
