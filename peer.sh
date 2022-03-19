@@ -2,10 +2,11 @@
 ###############################################################################
 #                 Anchor server peer generator                                #
 #                                                                             #
-#  When triggered, this script takes ${1} as a peer ID and ${2} as a WG       #
-#  pubkey. It generates a user config, drops it into a volume at /mnt/conf,   #
+#  When triggered, this script takes JSON payload with `name` as a peer ID    #
+#  and `pubkey` as a WG pubkey.                                               #
+#  It generates a user config, drops it into a volume at /mnt/conf,           #
 #  and adds the user to the interface's config file & restarts it.            #
-#  Assumes that WG is already stood up and configured in a particular way.    #
+#  The client's .conf will be returned to them inside the HTTP response.      #
 #                                                                             #
 #         ~sitful-hatred                                                      #
 #                                                                             #
